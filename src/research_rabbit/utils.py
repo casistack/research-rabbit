@@ -1,5 +1,96 @@
 from langsmith import traceable
 from tavily import TavilyClient
+import requests
+from typing import Literal, Optional, Union, Dict, List
+
+class SearxngClient:
+    """Client for interacting with a SearXNG instance."""
+    
+    def __init__(self, base_url: str):
+        """Initialize SearxNG client.
+        
+        Args:
+            base_url (str): Base URL of the SearXNG instance (e.g., 'http://localhost:8888')
+        """
+        self.base_url = base_url.rstrip('/')
+        
+    def search(self, query: str, max_results: int = 3, include_raw_content: bool = True) -> Dict:
+        """Perform a search using SearXNG.
+        
+        Args:
+            query (str): Search query
+            max_results (int): Maximum number of results to return
+            include_raw_content (bool): Whether to fetch full page content (not implemented for SearXNG)
+            
+        Returns:
+            dict: Search results in a format compatible with Tavily's response
+        """
+        try:
+            response = requests.get(
+                f"{self.base_url}/search",
+                params={
+                    'q': query,
+                    'format': 'json',
+                    'max_results': max_results
+                }
+            )
+            response.raise_for_status()
+            data = response.json()
+            
+            # Convert SearXNG results to Tavily-compatible format
+            results = []
+            for result in data.get('results', [])[:max_results]:
+                results.append({
+                    'title': result.get('title', ''),
+                    'url': result.get('url', ''),
+                    'content': result.get('content', ''),
+                    'raw_content': None  # SearXNG doesn't provide full content
+                })
+            
+            return {'results': results}
+            
+        except requests.RequestException as e:
+            raise Exception(f"SearXNG search failed: {str(e)}")
+
+@traceable
+def web_search(
+    query: str,
+    search_provider: Literal["tavily", "searxng"] = "tavily",
+    searxng_url: Optional[str] = None,
+    include_raw_content: bool = True,
+    max_results: int = 3
+) -> Dict:
+    """Unified search function supporting both Tavily and SearXNG.
+    
+    Args:
+        query (str): The search query to execute
+        search_provider (str): Either "tavily" or "searxng"
+        searxng_url (str, optional): Base URL for SearXNG instance if using SearXNG
+        include_raw_content (bool): Whether to include raw content (only applicable for Tavily)
+        max_results (int): Maximum number of results to return
+        
+    Returns:
+        dict: Search response containing results in Tavily-compatible format
+    """
+    if search_provider == "tavily":
+        tavily_client = TavilyClient()
+        return tavily_client.search(
+            query,
+            max_results=max_results,
+            include_raw_content=include_raw_content
+        )
+    elif search_provider == "searxng":
+        if not searxng_url:
+            raise ValueError("searxng_url must be provided when using SearXNG")
+        searxng_client = SearxngClient(searxng_url)
+        return searxng_client.search(
+            query,
+            max_results=max_results,
+            include_raw_content=include_raw_content
+        )
+    
+    else:
+        raise ValueError(f"Unsupported search provider: {search_provider}. Must be either 'tavily' or 'searxng'.")
 
 def deduplicate_and_format_sources(search_response, max_tokens_per_source, include_raw_content=True):
     """
@@ -67,25 +158,3 @@ def format_sources(search_results):
         f"* {source['title']} : {source['url']}"
         for source in search_results['results']
     )
-
-@traceable
-def tavily_search(query, include_raw_content=True, max_results=3):
-    """ Search the web using the Tavily API.
-    
-    Args:
-        query (str): The search query to execute
-        include_raw_content (bool): Whether to include the raw_content from Tavily in the formatted string
-        max_results (int): Maximum number of results to return
-        
-    Returns:
-        dict: Tavily search response containing:
-            - results (list): List of search result dictionaries, each containing:
-                - title (str): Title of the search result
-                - url (str): URL of the search result
-                - content (str): Snippet/summary of the content
-                - raw_content (str): Full content of the page if available"""
-     
-    tavily_client = TavilyClient()
-    return tavily_client.search(query, 
-                         max_results=max_results, 
-                         include_raw_content=include_raw_content)
