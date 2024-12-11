@@ -8,7 +8,7 @@ from langchain_ollama import ChatOllama
 from langgraph.graph import START, END, StateGraph
 
 from research_rabbit.configuration import Configuration
-from research_rabbit.utils import deduplicate_and_format_sources, tavily_search, format_sources
+from research_rabbit.utils import deduplicate_and_format_sources, web_search, format_sources
 from research_rabbit.state import SummaryState, SummaryStateInput, SummaryStateOutput
 from research_rabbit.prompts import query_writer_instructions, summarizer_instructions, reflection_instructions
 
@@ -35,8 +35,8 @@ def generate_query(state: SummaryState):
 def web_research(state: SummaryState):
     """ Gather information from the web """
     
-    # Search the web
-    search_results = tavily_search(state.search_query, include_raw_content=True, max_results=1)
+    # Search the web using default Tavily provider
+    search_results = web_search(state.search_query, include_raw_content=True, max_results=1)
     
     # Format the sources
     search_str = deduplicate_and_format_sources(search_results, max_tokens_per_source=1000)
