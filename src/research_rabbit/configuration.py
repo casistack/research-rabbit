@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass, field, fields
-from typing import Any, Optional
+from typing import Any, Optional, Literal
 
 from langchain_core.runnables import RunnableConfig
 from typing_extensions import Annotated
@@ -12,6 +12,8 @@ class Configuration:
     max_web_research_loops: int = 3
     local_llm: str = "llama3.2"
     ollama_base_url: str = "http://localhost:11434"
+    search_provider: Literal["tavily", "searxng"] = "tavily"
+    searxng_url: str = "http://localhost:8888"
 
     @classmethod
     def from_runnable_config(
