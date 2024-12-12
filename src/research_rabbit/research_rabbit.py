@@ -13,8 +13,9 @@ from research_rabbit.state import SummaryState, SummaryStateInput, SummaryStateO
 from research_rabbit.prompts import query_writer_instructions, summarizer_instructions, reflection_instructions
 
 # LLM
-llm = ChatOllama(model=Configuration.local_llm, temperature=0)
-llm_json_mode = ChatOllama(model=Configuration.local_llm, temperature=0, format="json")
+config = Configuration()
+llm = ChatOllama(model=config.local_llm, temperature=0, base_url=config.ollama_base_url)
+llm_json_mode = ChatOllama(model=config.local_llm, temperature=0, format="json", base_url=config.ollama_base_url)
 
 # Nodes   
 def generate_query(state: SummaryState):

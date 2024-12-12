@@ -1,0 +1,3 @@
+src/research_rabbit/__pycache__/*
+research_rabbit.egg-info/*
+.langgraph_api/*

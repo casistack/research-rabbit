@@ -11,6 +11,7 @@ class Configuration:
     """The configurable fields for the research assistant."""
     max_web_research_loops: int = 3
     local_llm: str = "llama3.2"
+    ollama_base_url: str = "http://localhost:11434"
 
     @classmethod
     def from_runnable_config(
